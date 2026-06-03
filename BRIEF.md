@@ -39,7 +39,7 @@ A service that generates a **night-shift handover for the morning manager.** Spe
 
 ### Also required
 
-- A backend (Node.js, framework of your choice). Assume input arrives as data, not a file you hand-edit.
+- A backend (Node.js, framework of your choice). Assume input arrives as data, not a file you hand-edit — and assume we may run your service against night-log text you haven't seen, so prefer an approach that generalizes over one hard-coded to this exact sample.
 - A way to view the handover — returned HTML, JSON a frontend renders, a Slack/email message — your call.
 - Structured logging that another builder (or an AI agent) could use to debug a bad handover in production: *which* hotel, *which* night, *why*.
 - Deployed somewhere we can hit with a `curl` command.
@@ -69,4 +69,4 @@ A service that generates a **night-shift handover for the morning manager.** Spe
 
 We run this exact workflow in production, so we'll be reading your output the way a real morning manager would. We're less interested in clever code than in whether you made something an operator could trust at 7am — and whether the way you built it would survive contact with hundreds of hotels.
 
-**Submission:** Send everything to hr@vouch-technologies.com. We'll respond within 5 working days.
+**Submission:** Send everything to [EMAIL]. We'll respond within 5 working days.
