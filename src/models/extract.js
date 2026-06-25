@@ -1,5 +1,6 @@
 import { Type } from '@google/genai';
 import { hashKey } from '../services/cache.js';
+import { slugify } from '../utils/text.js';
 import { groundFacts } from './ground.js';
 
 /**
@@ -146,12 +147,7 @@ function finalizeFact(raw, entry, index) {
 }
 
 function normalizeThreadKey(key, raw, entry) {
-  const base = (key || raw.title || entry.sourceId)
-    .toLowerCase()
-    .normalize('NFKD')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/(^-|-$)/g, '');
-  return base || entry.sourceId;
+  return slugify(key || raw.title || entry.sourceId, { maxLen: 0 }) || entry.sourceId;
 }
 
 // --- Deterministic fallback (no LLM) -------------------------------------------------

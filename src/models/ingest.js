@@ -16,41 +16,8 @@
  * @property {string|null} context  Optional surrounding context (e.g. a night-log header).
  */
 
-const MONTHS = {
-  jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5,
-  jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11,
-};
-
-/** Format a Date's calendar day as YYYY-MM-DD (no timezone math; values are already local). */
-function isoDate(year, monthIndex, day) {
-  const mm = String(monthIndex + 1).padStart(2, '0');
-  const dd = String(day).padStart(2, '0');
-  return `${year}-${mm}-${dd}`;
-}
-
-/**
- * Map an event timestamp to the morning its shift hands over to.
- * A night shift runs ~23:00–07:00 and spans two dates, so we split at local noon:
- * anything from noon onward belongs to the *next* morning; anything before noon
- * (the small hours) belongs to the *same* morning.
- *
- * Works off the ISO string's own offset so we don't depend on the host timezone.
- * @param {string} timestamp ISO-8601 with offset, e.g. "2026-05-25T23:14:00+08:00".
- * @returns {string|null} YYYY-MM-DD or null if unparseable.
- */
-export function shiftMorningFor(timestamp) {
-  const m = String(timestamp).match(
-    /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/,
-  );
-  if (!m) return null;
-  const [, y, mo, d, h] = m.map(Number);
-  if (Number(h) >= 12) {
-    // Roll to the next calendar day using a UTC Date purely for date arithmetic.
-    const next = new Date(Date.UTC(y, mo - 1, d + 1));
-    return isoDate(next.getUTCFullYear(), next.getUTCMonth(), next.getUTCDate());
-  }
-  return isoDate(y, mo - 1, d);
-}
+import { shiftMorningFor, parseHeaderMorning } from '../utils/dates.js';
+import { slugify } from '../utils/text.js';
 
 /**
  * Parse events.json text into the hotel record and one RawEntry per event.
@@ -75,22 +42,6 @@ export function parseEvents(jsonText) {
     context: null,
   }));
   return { hotel: doc.hotel ?? {}, entries };
-}
-
-/**
- * Parse a night-log header like "Night of Wed 27 May → morning Thu 28 May (...)".
- * We anchor on the *morning* date because that's the handover morning the entries
- * belong to. Falls back to the first date found if no explicit "morning" marker.
- * @returns {string|null} YYYY-MM-DD
- */
-export function parseHeaderMorning(headerText, referenceYear) {
-  const afterMorning = headerText.split(/morning/i)[1] ?? headerText;
-  const m = afterMorning.match(/(\d{1,2})\s+([A-Za-z]{3,})/);
-  if (!m) return null;
-  const day = Number(m[1]);
-  const month = MONTHS[m[2].slice(0, 3).toLowerCase()];
-  if (month === undefined) return null;
-  return isoDate(referenceYear, month, day);
 }
 
 /**
@@ -123,7 +74,7 @@ export function parseNightLogs(mdText, { referenceYear }) {
   return sections.map((s) => {
     const morning = parseHeaderMorning(s.header, referenceYear);
     return {
-      sourceId: morning ? `nightlog-${morning}` : `nightlog-${slug(s.header)}`,
+      sourceId: morning ? `nightlog-${morning}` : `nightlog-${slugify(s.header, { maxLen: 40 })}`,
       source: 'night-log',
       rawText: s.body.join('\n').trim(),
       shiftMorning: morning,
@@ -131,8 +82,4 @@ export function parseNightLogs(mdText, { referenceYear }) {
       context: s.header,
     };
   });
-}
-
-function slug(text) {
-  return text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '').slice(0, 40);
 }

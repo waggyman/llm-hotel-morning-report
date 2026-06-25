@@ -8,10 +8,7 @@
  * statement cannot produce a quote that exists in the source.
  */
 
-/** Normalize for substring comparison: NFC unicode, collapsed whitespace, lowercased. */
-function normalize(s) {
-  return (s ?? '').normalize('NFC').replace(/\s+/g, ' ').trim().toLowerCase();
-}
+import { normalizeText } from '../utils/text.js';
 
 /**
  * @param {object} fact   must have .sourceQuote and .flags[]
@@ -19,8 +16,8 @@ function normalize(s) {
  * @returns {object} fact with { grounded: boolean, flags } updated
  */
 export function groundFact(fact, rawText) {
-  const hay = normalize(rawText);
-  const needle = normalize(fact.sourceQuote);
+  const hay = normalizeText(rawText);
+  const needle = normalizeText(fact.sourceQuote);
   const grounded = needle.length > 0 && hay.includes(needle);
   const flags = new Set(fact.flags ?? []);
   if (!grounded) flags.add('unverified');

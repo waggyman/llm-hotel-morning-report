@@ -63,18 +63,22 @@ src/
   server.js              # bootstrap: build app, listen
   app.js                 # Fastify instance, plugins, route registration
   config.js              # env parsing (dotenv)
-  controllers/           # request → model → view; no business logic
-  models/                # domain: ingest, fact schema, reconcile, handover assembly
-  services/              # LLM client (provider interface), grounding, cache
+  controllers/           # request → service → view; no business logic
+  models/                # domain logic: ingest, extract, ground, reconcile, handover
+  services/              # infrastructure: llm (provider interface), cache, dataSource, pipeline
+  utils/                 # pure generic helpers: dates, text — no domain knowledge
   views/                 # EJS templates
 data/                    # sample input (events.json, night-logs.md)
 ```
 
-- **Controllers** are thin: parse the request, call a model function, hand the result to a
-  view/serializer. No reconciliation or LLM logic here.
-- **Models** hold all domain logic and are pure/testable (no HTTP, no Fastify).
-- **Services** are swappable infrastructure (the LLM provider lives behind an interface so
-  Gemini could be replaced without touching models).
+- **Controllers** are thin: parse the request, call the pipeline service, hand the result
+  to a view/serializer. No reconciliation or LLM logic here.
+- **Models** hold all domain logic and are pure/testable (no HTTP, no Fastify, no file I/O).
+- **Services** are swappable infrastructure: the LLM provider lives behind an interface so
+  Gemini could be replaced without touching models; `pipeline` orchestrates the steps.
+- **Utils** are pure, dependency-free helpers (date math, text normalization/slugs) with no
+  knowledge of hotels or handovers, so they're reusable and trivially unit-testable. Keep
+  generic helpers here, not inlined in model files.
 
 ## Grounding rules (non-negotiable)
 
