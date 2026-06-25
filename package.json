@@ -1,0 +1,25 @@
+{
+  "name": "vouch-night-handover",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Night-shift handover generator for hotel front desks (Vouch builder test).",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "handover": "node src/cli.js",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "@google/genai": "^0.14.0",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.2",
+    "pino": "^9.5.0"
+  },
+  "devDependencies": {
+    "pino-pretty": "^13.0.0"
+  }
+}
