@@ -14,8 +14,6 @@ import { Type } from '@google/genai';
  *      + detect status regressions/contradictions.
  */
 
-const CONSOLIDATION_PROMPT_VERSION = 'consolidate-v1';
-
 const CONSOLIDATION_SCHEMA = {
   type: Type.OBJECT,
   properties: {
