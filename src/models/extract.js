@@ -208,7 +208,17 @@ export async function extractEntry(entry, { llm, cache, logger }) {
     const facts = deterministicFacts(entry);
     return groundFacts(facts, entry.rawText, { logger, sourceId: entry.sourceId });
   }
-  const key = hashKey(PROMPT_VERSION, llm.name, entry.source, entry.rawText, entry.hints ?? {});
+  // Date is part of the entry's identity: keying by shiftMorning keeps each night's
+  // extraction independent, so a future night-log that happens to repeat earlier text
+  // can't collide with a prior night's cached facts.
+  const key = hashKey(
+    PROMPT_VERSION,
+    llm.name,
+    entry.source,
+    entry.shiftMorning ?? '',
+    entry.rawText,
+    entry.hints ?? {},
+  );
   let rawFacts;
   if (cache?.has(key)) {
     rawFacts = cache.get(key);
