@@ -36,8 +36,9 @@ curl -s -H "Accept: application/json" "http://localhost:3000/handover?date=2026-
 # HTML (default for browsers; force with ?format=html)
 curl -s http://localhost:3000/handover
 
-# Health check
+# Health check / cache status
 curl -s http://localhost:3000/healthz
+curl -s http://localhost:3000/status   # is the cache warm, when built, which nights
 ```
 
 CLI (prints JSON to stdout, logs to stderr):
@@ -45,7 +46,19 @@ CLI (prints JSON to stdout, logs to stderr):
 ```bash
 npm run handover               # latest morning
 npm run handover -- 2026-05-28 # specific morning
+npm run refresh                # force-rebuild the cache after the input data changes
 ```
+
+## Performance
+
+The expensive work (LLM extraction + thread consolidation) depends only on the input data,
+not on the requested date — so it runs **once** into a cached prepared state (in memory +
+a `tmp/handover-state.json` snapshot). Requests then only run pure reconcile + assemble:
+
+- **Date-swaps: ~1ms** (no LLM at request time).
+- **Boot**: loads the snapshot instantly; rebuilds only when the input content changed.
+- **Rebuild (`npm run refresh`)**: ~6s on the sample; even then only *new* entries hit the
+  model (per-entry extraction is hash-cached).
 
 ## How it works
 
@@ -81,9 +94,10 @@ src/
   config.js              env parsing
   controllers/           HTTP layer (thin): request → service → view
   models/                domain logic: ingest, extract, ground, reconcile, handover
-  services/              infrastructure: llm (provider iface), cache, dataSource, pipeline
+  services/              infrastructure: llm, cache, dataSource, state (cache), pipeline
   utils/                 pure helpers: dates, text
   views/                 EJS templates
+scripts/                 refresh-cache.js (force a rebuild)
 data/                    sample input (events.json, night-logs.md)
 test/                    unit tests for the pure logic
 ```

@@ -4,19 +4,27 @@ import { config } from '../config.js';
 import { parseEvents, parseNightLogs } from '../models/ingest.js';
 
 /**
- * Read the raw inputs from disk and parse them into a single ingest result.
- * This is the only place that touches the filesystem for sample data; the models
- * stay pure. Swap this out to ingest input arriving over HTTP instead.
+ * Read the raw input text from disk. This is the only place that touches the filesystem
+ * for sample data; the models stay pure. Swap this out to ingest input arriving over HTTP.
  *
  * @param {string} [dir] data directory (defaults to config.dataDir)
- * @returns {Promise<{ hotel: Object, entries: import('../models/ingest.js').RawEntry[] }>}
+ * @returns {Promise<{ eventsText: string, logsText: string }>}
  */
-export async function loadFromDir(dir = config.dataDir) {
+export async function readRawInputs(dir = config.dataDir) {
   const [eventsText, logsText] = await Promise.all([
     readFile(join(dir, 'events.json'), 'utf8'),
     readFile(join(dir, 'night-logs.md'), 'utf8'),
   ]);
-  return parseInputs({ eventsText, logsText });
+  return { eventsText, logsText };
+}
+
+/**
+ * Read and parse the raw inputs into a single ingest result.
+ * @param {string} [dir] data directory (defaults to config.dataDir)
+ * @returns {Promise<{ hotel: Object, entries: import('../models/ingest.js').RawEntry[] }>}
+ */
+export async function loadFromDir(dir = config.dataDir) {
+  return parseInputs(await readRawInputs(dir));
 }
 
 /**

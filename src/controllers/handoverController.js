@@ -20,6 +20,9 @@ function wantsJson(req) {
 export async function handoverRoutes(app) {
   app.get('/healthz', async () => ({ ok: true }));
 
+  // Cache/readiness diagnostics: is the prepared state warm, when was it built, which nights.
+  app.get('/status', async () => app.handoverService.status());
+
   app.get('/', async (req, reply) => reply.redirect('/handover'));
 
   app.get('/handover', async (req, reply) => {

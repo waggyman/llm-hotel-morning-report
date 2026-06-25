@@ -72,6 +72,8 @@ export async function consolidateThreads(facts, { llm, logger } = {}) {
       system: CONSOLIDATION_SYSTEM,
       prompt: `Facts:\n${consolidationInput(facts)}`,
       schema: CONSOLIDATION_SCHEMA,
+      // Grouping is mechanical; thinking only adds latency (~22s -> ~7s on the sample).
+      thinkingBudget: 0,
     });
     groups = Array.isArray(out.threads) ? out.threads : [];
   } catch (err) {

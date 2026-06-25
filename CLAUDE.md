@@ -19,8 +19,9 @@ papering over it.
 - **Fastify 5** — HTTP server. Its built-in logger *is* pino, so structured logging is free.
 - **@fastify/view + EJS** — HTML view layer.
 - **@google/genai** (Gemini, `gemini-2.5-flash`) — used ONLY for per-entry extraction.
-- No database. Reconciliation is **stateless**: each request recomputes the full week
-  from source data up to the requested date.
+- No database. The expensive LLM work is computed once into a cached **prepared state**
+  (in memory + a disk snapshot); per-request work is pure reconcile + assemble. See
+  "Caching & performance".
 
 ## Architecture — "LLM extracts, code assembles"
 
@@ -65,9 +66,10 @@ src/
   config.js              # env parsing (dotenv)
   controllers/           # request → service → view; no business logic
   models/                # domain logic: ingest, extract, ground, reconcile, handover
-  services/              # infrastructure: llm (provider interface), cache, dataSource, pipeline
+  services/              # infrastructure: llm, cache, dataSource, state (cache), pipeline
   utils/                 # pure generic helpers: dates, text — no domain knowledge
   views/                 # EJS templates
+scripts/                 # refresh-cache.js (force a rebuild)
 data/                    # sample input (events.json, night-logs.md)
 ```
 
@@ -87,6 +89,30 @@ data/                    # sample input (events.json, night-logs.md)
 - Surface contradictions and incomplete entries explicitly — never resolve them silently.
 - Translation is the only transform allowed to alter wording; flag it and keep the original.
 - `DISABLE_LLM=true` must yield a safe deterministic fallback, not a crash.
+
+## Caching & performance
+
+The expensive pipeline stages — LLM extraction and thread consolidation — depend only on
+the **input data**, not on which morning is requested. So they run once and are cached;
+date-swaps then cost ~1ms.
+
+- **Prepared state** (`services/state.js`): consolidated grounded facts + available
+  mornings + a content hash of the inputs. Held in memory and persisted to a disk snapshot
+  (`tmp/handover-state.json`). Per-request `generate({date})` only runs pure reconcile +
+  assemble over this state — no LLM at request time.
+- **Boot worker** (`server.js` → `service.ensureReady()`): on startup, load the snapshot;
+  rebuild **only if** the input content hash changed (new/edited nights). Unchanged data ⇒
+  instant boot. A warm-up failure degrades to a lazy build on first request, never a crash.
+- **Per-entry extraction cache** (`services/cache.js`): even a rebuild only calls the model
+  for entries whose text/date is new; unchanged entries are served from the hash cache.
+- **Refresh** (`npm run refresh` → `scripts/refresh-cache.js`): force a rebuild after the
+  data changes.
+- **Thinking off for consolidation**: the grouping call sets `thinkingBudget: 0`
+  (~22s → ~7s on the sample); extraction keeps thinking since it's cached anyway.
+
+No external cache (memcached/Redis): data is tiny and single-process, and a disk snapshot
+survives restarts better than an external cache would. The snapshot lives behind
+`state.js`, so swapping in another store is localized if multi-instance scaling ever needs it.
 
 ## Logging
 

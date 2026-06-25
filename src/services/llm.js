@@ -20,7 +20,12 @@ export function createGeminiClient({ apiKey, model, logger, maxRetries = 2 }) {
   return {
     name: `gemini:${model}`,
 
-    async generateStructured({ system, prompt, schema }) {
+    /**
+     * @param {{ system?: string, prompt: string, schema: object, thinkingBudget?: number }} req
+     *   thinkingBudget: token budget for the model's internal "thinking". 0 disables it —
+     *   use for mechanical tasks (grouping/classification) where it only adds latency.
+     */
+    async generateStructured({ system, prompt, schema, thinkingBudget }) {
       let lastErr;
       for (let attempt = 0; attempt <= maxRetries; attempt++) {
         try {
@@ -32,6 +37,7 @@ export function createGeminiClient({ apiKey, model, logger, maxRetries = 2 }) {
               responseMimeType: 'application/json',
               responseSchema: schema,
               temperature: 0,
+              ...(thinkingBudget !== undefined ? { thinkingConfig: { thinkingBudget } } : {}),
             },
           });
           const text = res.text;

@@ -11,6 +11,7 @@
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
     "handover": "node src/cli.js",
+    "refresh": "node scripts/refresh-cache.js",
     "test": "node --test"
   },
   "dependencies": {
