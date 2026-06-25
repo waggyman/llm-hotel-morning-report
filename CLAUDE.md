@@ -109,3 +109,21 @@ explain *which* hotel, *which* night, *why*.
 - ESM imports, no CommonJS `require`.
 - Keep models pure and unit-testable; put side effects in services.
 - Prefer clarity over cleverness — an operator must trust this at 7am.
+
+## Project status / tasks
+
+Pipeline is complete end-to-end (ingest → extract → ground → reconcile → assemble →
+HTML/JSON serve) and verified against the sample data.
+
+- [x] Step 1 — ingest both formats into a common RawEntry shape
+- [x] Step 2 — Gemini client (provider interface) + content-hash cache
+- [x] Step 3 — LLM extraction into grounded facts + verbatim grounding check
+- [x] Step 4 — reconcile facts into cross-night threads (still open / newly resolved / new tonight)
+- [x] Step 5 — action-first handover assembly (on fire / pending / FYI + review flags)
+- [x] Step 6 — Fastify HTTP layer: HTML/JSON views, controller, server, CLI
+- [x] README — run instructions + curl samples
+- [x] Unit tests for the pure logic (dates, grounding, reconciliation, assembly)
+
+Possible hours 3–6 (not started): consolidate the 204-passport item into the immigration
+thread; persist facts so handovers build incrementally instead of recomputing the week;
+multi-hotel routing; tune severity rules with an operator.
